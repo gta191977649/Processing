@@ -72,12 +72,21 @@
             }
             NodeList[x][y] = Node
         }
+
+        function astar_doPathFind() {
+            AStar.openList.push(Start)
+
+            //console.log(AStar)
+        }
        
         function setup(){
             createCanvas(800,600)
             background(51)
             createGrid()
             rw.render(NodeList)
+
+
+            astar_doPathFind()
         }
         function draw() {
             
