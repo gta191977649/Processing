@@ -3,6 +3,8 @@ class RenderWare {
         this.NodeList = nodeList
     }
     renderGrid() {
+        stroke(0)
+        strokeWeight(1)
         let x = 1
         let y = 1
         for(let i = 1; i <= SQUARE_SIZE * SQUARE_SIZE; i++) {
@@ -39,7 +41,6 @@ class RenderWare {
     }
 
     render(nodeList) {
-
         this.NodeList = nodeList        
         this.renderGrid()
     }

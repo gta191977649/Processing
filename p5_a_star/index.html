@@ -9,7 +9,7 @@
 <body>
     <main>
     </main>
-    <script src="https://cdn.jsdelivr.net/npm/p5@1.4.0/lib/p5.js"></script>
+    <script src="p5.js"></script>
     <script src="rw.js"></script>
     <script>
         let NodeList = []
@@ -40,7 +40,7 @@
         ]
 
         let Start = [1,1]
-        let Target = [19,19]
+        let Target = [20,12]
         let Current = null 
 
         let NODE_SIZE = 20
@@ -53,7 +53,8 @@
             path: [],
             heuristic(a,b) {
                 //dist is come from processsing lib
-                let d = abs(a.x-b.x) + abs(a.y-b.y)
+                let d = dist(a.x,a.y,b.x,b.y)
+                //let d = abs(a.x-b.x) + abs(a.y-b.y)
                 return d
             }
         }
@@ -75,8 +76,10 @@
                         addNode(i,j,node)
                     } else if(i == Target[0] && j == Target[1]) { // if is target pos
                         node = newNode(i,j,"target")
-                        Target = node
                         addNode(i,j,node)
+                        Target = node
+                        console.log(node)
+
                     } else {
                         node = newNode(i,j,"node")
                         addNode(i,j,node)
@@ -93,9 +96,8 @@
             return false
         }
         function isRoad(x,y) {
-            if(NodeList[x] == undefined || NodeList[x][y] == undefined) return false
-            if(isBlock(x,y)) return false
-            if(NodeList[x][y].type == "node") return true
+            if(!NodeList[x] || !NodeList[x][y]) return false
+            if(NodeList[x][y].type == "node" || NodeList[x][y].type == "target") return true
             return false
         }
 
@@ -119,10 +121,23 @@
             if(isRoad(x-1,y)) {
                 connections.push(NodeList[x-1][y])
             }
+            //diagonal
+            if(isRoad(x+1,y+1)) {
+                connections.push(NodeList[x+1][y+1])
+            }
+            if(isRoad(x-1,y-1)) {
+                connections.push(NodeList[x-1][y-1])
+            }
+            if(isRoad(x+1,y-1)) {
+                connections.push(NodeList[x+1][y-1])
+            }
+            if(isRoad(x-1,y+1)) {
+                connections.push(NodeList[x-1][y+1])
+            }
             return connections
         }
         function addNode(x,y,node) {
-            if( NodeList[x] == undefined) NodeList[x] = []
+            if(NodeList[x] == undefined) NodeList[x] = []
             NodeList[x][y] = node
         }
         function newNode(x,y,type) {
@@ -138,7 +153,7 @@
             return Node
         }
         function removeFromArray(array,node) {
-            for(let i = array.length - 1; i >=0; i--) {
+            for(let i = array.length - 1; i >= 0; i--) {
                 if(array[i] == node) {
                     array.splice(i,1)
                 }
@@ -181,8 +196,25 @@
 
                 if(AStar.openList[lowIndex] == Target) {
                     // find the path
-                    noLoop();
+                    let x = Target.x
+                    let y = Target.y
+                    noLoop()
                     console.log("Find!")
+                    
+                    rw.renderPoint(x,y,0,0,255)
+                    rw.renderPoint(Start.x,Start.y,255,0,0)
+
+                    //draw path
+                    stroke(255)
+                    strokeWeight(2)
+                    for (let i = 0;i < AStar.path.length;i++) {
+                        if(AStar.path[i+1]) {
+                            let current = AStar.path[i]
+                            let next = AStar.path[i+1]
+                            line(current.x*NODE_SIZE - (NODE_SIZE/2),current.y* NODE_SIZE - (NODE_SIZE/2),next.x* NODE_SIZE- (NODE_SIZE/2),next.y* NODE_SIZE- (NODE_SIZE/2))
+                        }     
+                    }
+                    return
                 }
 
                 removeFromArray(AStar.openList,Current)
@@ -192,29 +224,35 @@
 
                 for (let i = 0;i < conns.length;i++) {
                     // is visted ?
-                    if (!AStar.closeList.includes(conns[i])) {
+                    if (conns[i] && !AStar.closeList.includes(conns[i])) {
                         let g = Current.g + 1
-                          // is unvisited ?
+                        let newPathFound = false
                         if (AStar.openList.includes(conns[i])) {
                             if(g < conns[i].g) {
                                 conns[i].g = g
+                                newPathFound = true
                             }
                         } else { // if is a new avaiable connected node
                             conns[i].g = g
+                            newPathFound = true
                             AStar.openList.push(conns[i])
                         }
-                        conns[i].h = AStar.heuristic(conns[i],Target)
-                        conns[i].f = conns[i].g + conns[i].h
-                        conns[i].previous = Current
+                        if(newPathFound) {
+                            conns[i].h = AStar.heuristic(conns[i],Target)
+                            conns[i].f = conns[i].g + conns[i].h
+                            conns[i].previous = Current
+                        }
+                      
                     }
                   
                     
                 }
 
+            } else {
+                console.log("No Solusion")
             }
-
-            rw.render(NodeList)
-
+          
+           
             //Update path every frame
             AStar.path = []
             let temp = Current
@@ -223,8 +261,9 @@
                 AStar.path.push(temp.previous)
                 temp = temp.previous
             }
-          
-
+            
+            //Rendering things
+            rw.render(NodeList)
             // Draw close set
             for (let i = 0;i < AStar.closeList.length;i++) {
                 let x = AStar.closeList[i].x
@@ -237,16 +276,17 @@
                 let x = AStar.openList[i].x
                 let y = AStar.openList[i].y
                 if(!isBlock(x,y))
-                    rw.renderPoint(x,y,255,255,0)
+                    rw.renderPoint(x,y,250,180,0)
             }
-    
-            // Draw path
+            // Draw Path
             for (let i = 0;i < AStar.path.length;i++) {
                 let x = AStar.path[i].x
                 let y = AStar.path[i].y
-                if(!isBlock(x,y))
-                    rw.renderPoint(x,y,0,255,0)
+                rw.renderPoint(x,y,0,250,0)
+                    
             }
+            
+           
             
         }
     </script>
