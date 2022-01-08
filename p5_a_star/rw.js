@@ -9,7 +9,6 @@ class RenderWare {
             this.renderNode(x,y)
             x++
             if(i % SQUARE_SIZE == 0) { // change line
-                console.log(i)
                 y++
                 x = 1
             }
@@ -34,8 +33,15 @@ class RenderWare {
         }
             
     }
+    renderPoint(x,y,r,g,b) {
+        fill(color(r,g,b))
+        square((x-1)*NODE_SIZE,(y-1)*NODE_SIZE,NODE_SIZE)
+    }
+
     render(nodeList) {
+
         this.NodeList = nodeList        
         this.renderGrid()
     }
+   
 }

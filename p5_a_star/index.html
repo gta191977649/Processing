@@ -14,22 +14,48 @@
     <script>
         let NodeList = []
         let BlockList = [
+            [5,1],
             [5,2],
             [5,3],
             [5,4],
+
+            [8,5],
+            [8,6],
+            [8,7],
+            [8,8],
+
+
+            [10,9],
+            [10,10],
+            [10,11],
+            [10,12],
+
+
+            [13,11],
+            [13,12],
+            [13,13],
+            [13,14],
+            [13,15],
+         
         ]
 
         let Start = [1,1]
-        let Target = [10,10]
-        let Current = Start 
+        let Target = [19,19]
+        let Current = null 
 
-        let NODE_SIZE = 50
-        let SQUARE_SIZE = 10 // 100 * 100
+        let NODE_SIZE = 20
+        let SQUARE_SIZE = 20// 100 * 100
         let PADDING = 0
 
         let AStar = {
             openList: [],
-            closeList: []
+            closeList: [],
+            path: [],
+            heuristic(a,b) {
+                //dist is come from processsing lib
+                let d = abs(a.x-b.x) + abs(a.y-b.y)
+                return d
+            }
         }
 
 
@@ -38,15 +64,22 @@
         function createGrid() {
             for(let i = 1; i <= SQUARE_SIZE; i ++) {
                 for(let j = 1; j <= SQUARE_SIZE; j ++) {
+                    let node = null
                     if (isBlock(i,j)) {
                         // if is block
-                        newNode(i,j,"block")
+                        node = newNode(i,j,"block")
+                        addNode(i,j,node)
                     } else if(i == Start[0] && j == Start[1]) { // if is start pos
-                        newNode(i,j,"start")
+                        node = newNode(i,j,"start")
+                        Start = node
+                        addNode(i,j,node)
                     } else if(i == Target[0] && j == Target[1]) { // if is target pos
-                        newNode(i,j,"target")
+                        node = newNode(i,j,"target")
+                        Target = node
+                        addNode(i,j,node)
                     } else {
-                        newNode(i,j,"node")
+                        node = newNode(i,j,"node")
+                        addNode(i,j,node)
                     }
                 }
             }
@@ -59,36 +92,161 @@
             }
             return false
         }
-        
+        function isRoad(x,y) {
+            if(NodeList[x] == undefined || NodeList[x][y] == undefined) return false
+            if(isBlock(x,y)) return false
+            if(NodeList[x][y].type == "node") return true
+            return false
+        }
+
+        function findConnnections(node) { // find all connections on a node
+            let x = node.x
+            let y = node.y
+            let connections = []
+            // find up
+            if(isRoad(x,y+1)) {
+                connections.push(NodeList[x][y+1])
+            }
+            // find down
+            if(isRoad(x,y-1)) {
+                connections.push(NodeList[x][y+1])
+            }
+            // right
+            if(isRoad(x+1,y)) {
+                connections.push(NodeList[x+1][y])
+            }
+            // left
+            if(isRoad(x-1,y)) {
+                connections.push(NodeList[x-1][y])
+            }
+            return connections
+        }
+        function addNode(x,y,node) {
+            if( NodeList[x] == undefined) NodeList[x] = []
+            NodeList[x][y] = node
+        }
         function newNode(x,y,type) {
-            //NodeList.push()
             let Node = {
                 x: x,
                 y: y,
                 type:type,
+                g: 0,
+                h: 0,
+                f: 0,
+                previous: undefined,
             }
-            if( NodeList[x] == undefined) {
-                NodeList[x] = []
+            return Node
+        }
+        function removeFromArray(array,node) {
+            for(let i = array.length - 1; i >=0; i--) {
+                if(array[i] == node) {
+                    array.splice(i,1)
+                }
             }
-            NodeList[x][y] = Node
         }
 
-        function astar_doPathFind() {
-            AStar.openList.push(Start)
 
-            //console.log(AStar)
-        }
-       
         function setup(){
-            createCanvas(800,600)
+            createCanvas(SQUARE_SIZE * NODE_SIZE,SQUARE_SIZE * NODE_SIZE)
             background(51)
             createGrid()
+
             rw.render(NodeList)
+            Current = Start
 
-
-            astar_doPathFind()
+            // debug things
+            let conns = findConnnections(Current)
+            for (let i = 0;i < conns.length;i++) {
+                let x = conns[i].x
+                let y = conns[i].y
+                rw.renderPoint(x,y,0,255,0)
+            }
+            
+            
+            // add the start to the open set
+            console.log(Current)
+            AStar.openList.push(Start)
+            
         }
         function draw() {
+            if (AStar.openList.length > 0) {
+                let lowIndex = 0
+                for(let i = 0; i < AStar.openList.length; i++) {
+                    if (AStar.openList[i].f < AStar.openList[lowIndex].f) {
+                        lowIndex = i
+                    }
+                }
+
+                Current = AStar.openList[lowIndex]
+
+                if(AStar.openList[lowIndex] == Target) {
+                    // find the path
+                    noLoop();
+                    console.log("Find!")
+                }
+
+                removeFromArray(AStar.openList,Current)
+                AStar.closeList.push(Current)
+
+                let conns = findConnnections(Current) 
+
+                for (let i = 0;i < conns.length;i++) {
+                    // is visted ?
+                    if (!AStar.closeList.includes(conns[i])) {
+                        let g = Current.g + 1
+                          // is unvisited ?
+                        if (AStar.openList.includes(conns[i])) {
+                            if(g < conns[i].g) {
+                                conns[i].g = g
+                            }
+                        } else { // if is a new avaiable connected node
+                            conns[i].g = g
+                            AStar.openList.push(conns[i])
+                        }
+                        conns[i].h = AStar.heuristic(conns[i],Target)
+                        conns[i].f = conns[i].g + conns[i].h
+                        conns[i].previous = Current
+                    }
+                  
+                    
+                }
+
+            }
+
+            rw.render(NodeList)
+
+            //Update path every frame
+            AStar.path = []
+            let temp = Current
+            AStar.path.push(temp)
+            while(temp.previous) {
+                AStar.path.push(temp.previous)
+                temp = temp.previous
+            }
+          
+
+            // Draw close set
+            for (let i = 0;i < AStar.closeList.length;i++) {
+                let x = AStar.closeList[i].x
+                let y = AStar.closeList[i].y
+                if(!isBlock(x,y))
+                    rw.renderPoint(x,y,100,100,100)
+            }
+            // Draw open set    
+            for (let i = 0;i < AStar.openList.length;i++) {
+                let x = AStar.openList[i].x
+                let y = AStar.openList[i].y
+                if(!isBlock(x,y))
+                    rw.renderPoint(x,y,255,255,0)
+            }
+    
+            // Draw path
+            for (let i = 0;i < AStar.path.length;i++) {
+                let x = AStar.path[i].x
+                let y = AStar.path[i].y
+                if(!isBlock(x,y))
+                    rw.renderPoint(x,y,0,255,0)
+            }
             
         }
     </script>
