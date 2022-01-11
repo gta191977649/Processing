@@ -68,7 +68,7 @@
 
 
         let rw = new RenderWare()
-
+        let startTime = 0
         function createGrid() {
             for(let i = 1; i <= SQUARE_SIZE; i ++) {
                 for(let j = 1; j <= SQUARE_SIZE; j ++) {
@@ -86,7 +86,6 @@
                         addNode(i,j,node)
                         Target = node
                         console.log(node)
-
                     } else {
                         node = newNode(i,j,"node")
                         addNode(i,j,node)
@@ -195,7 +194,7 @@
             // add the start to the open set
             console.log(Current)
             AStar.openList.push(Start)
-            
+            startTime = Date.now()
         }
         function draw() {
             if (AStar.openList.length > 0) {
@@ -217,7 +216,8 @@
                     
                     rw.renderPoint(x,y,0,0,255)
                     rw.renderPoint(Start.x,Start.y,255,0,0)
-
+                    textSize(32);
+                    text(Date.now() - startTime+" ms", x* NODE_SIZE/2, y * NODE_SIZE, 200, 80);
                     //draw path
                     stroke(255)
                     strokeWeight(2)
@@ -238,7 +238,7 @@
 
                 for (let i = 0;i < conns.length;i++) {
                     // is visted ?
-                    if (conns[i] && !AStar.closeList.includes(conns[i])) {
+                    if (!AStar.closeList.includes(conns[i])) {
                         let g = Current.g + 1
                         let newPathFound = false
                         if (AStar.openList.includes(conns[i])) {
